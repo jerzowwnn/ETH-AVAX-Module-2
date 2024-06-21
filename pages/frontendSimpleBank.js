@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import atm_abi from "../artifacts/contracts/SimpleBank.sol/SimpleBank.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
-  const [depositAmt, setDepositAmt] = useState(0);
-  const [withdrawAmt, setWithdrawAmt] = useState(0);
+  const [transactionAmt, setTransactionAmt] = useState(0);
   const [transactionDetails, setTransactionDetails] = useState(null);
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const contractAddress = "YOUR_CONTRACT_ADDRESS";
   const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
@@ -61,18 +60,9 @@ export default function HomePage() {
     }
   };
 
-  const deposit = async () => {
-    if (atm && depositAmt > 0) {
-      let tx = await atm.deposit(depositAmt);
-      const receipt = await tx.wait();
-      setTransactionDetails(receipt);
-      getBalance();
-    }
-  };
-
-  const withdraw = async () => {
-    if (atm && withdrawAmt > 0) {
-      let tx = await atm.withdraw(withdrawAmt);
+  const performTransaction = async (amount) => {
+    if (atm) {
+      let tx = await atm.depositWithdraw(amount);
       const receipt = await tx.wait();
       setTransactionDetails(receipt);
       getBalance();
@@ -115,20 +105,12 @@ export default function HomePage() {
         <div>
           <input
             type="number"
-            placeholder="Deposit Amount"
-            value={depositAmt}
-            onChange={(e) => setDepositAmt(parseInt(e.target.value))}
+            placeholder="Transaction Amount"
+            value={transactionAmt}
+            onChange={(e) => setTransactionAmt(parseInt(e.target.value))}
           />
-          <button onClick={deposit}>Deposit</button>
-        </div>
-        <div>
-          <input
-            type="number"
-            placeholder="Withdraw Amount"
-            value={withdrawAmt}
-            onChange={(e) => setWithdrawAmt(parseInt(e.target.value))}
-          />
-          <button onClick={withdraw}>Withdraw</button>
+          <button onClick={() => performTransaction(transactionAmt)}>Deposit</button>
+          <button onClick={() => performTransaction(-transactionAmt)}>Withdraw</button>
         </div>
         {renderTransactionDetails()}
       </div>
