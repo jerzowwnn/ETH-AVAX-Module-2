@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { ethers } from "ethers";
+import React, {useState, useEffect} from "react";
+import {ethers} from "ethers";
 import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
 export default function HomePage() {
