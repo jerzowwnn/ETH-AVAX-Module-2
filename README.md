@@ -4,7 +4,9 @@ This repository contains my files for the Module 2 project in the ETH + AVAX Pro
 - getBalance() = a function that returns the current balance stored in the contract
 - depositWithdraw() = a function that enables the owner to deposit or withdraw funds from the contract's balance. 
 
-It also contains index.js, which is an application for the Assessment.sol contract. It displays the results of the function in its frontend.
+It also contains index.js, which is an application for the Assessment.sol contract. It displays the results of the function in its frontend. This script offers the following features and functionalities:
+- Front-end functionality that allows users to withdraw from and deposit funds to their wallet.
+- Display theie transaction details. 
 
 # Prerequisites
 In using the files contained in this repository, one must have the following:
