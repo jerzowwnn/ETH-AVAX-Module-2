@@ -10,7 +10,7 @@ export default function HomePage() {
   const [transactionAmt, setTransactionAmt] = useState(0);
   const [transactionDetails, setTransactionDetails] = useState(null);
 
-  const contractAddress = "YOUR_CONTRACT_ADDRESS";
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
