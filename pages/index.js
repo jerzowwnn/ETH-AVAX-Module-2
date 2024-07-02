@@ -9,7 +9,7 @@ export default function HomePage() {
   const [totalDonations, setTotalDonations] = useState(0); // Set initial totalDonations to 0
   const [donationAmount, setDonationAmount] = useState(0); // Set initial donationAmount to 0
 
-  const contractAddress = "YOUR_CONTRACT_ADDRESS";
+  const contractAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   const charityABI = charityAbi.abi;
 
   const getWallet = async () => {
