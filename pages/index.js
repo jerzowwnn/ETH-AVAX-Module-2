@@ -1,17 +1,16 @@
-import React, {useState, useEffect} from "react";
-import {ethers} from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import charityAbi from "../artifacts/contracts/CharityDonationTracker.sol/CharityDonationTracker.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [atm, setATM] = useState(undefined);
-  const [balance, setBalance] = useState(undefined);
-  const [transactionAmt, setTransactionAmt] = useState(0);
-  const [transactionDetails, setTransactionDetails] = useState(null);
+  const [charityContract, setCharityContract] = useState(undefined);
+  const [totalDonations, setTotalDonations] = useState(0); // Set initial totalDonations to 0
+  const [donationAmount, setDonationAmount] = useState(0); // Set initial donationAmount to 0
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+  const contractAddress = "YOUR_CONTRACT_ADDRESS";
+  const charityABI = charityAbi.abi;
 
   const getWallet = async () => {
     if (window.ethereum) {
@@ -43,50 +42,38 @@ export default function HomePage() {
     handleAccount(accounts);
 
     // Once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getCharityContract();
   };
 
-  const getATMContract = () => {
+  const getCharityContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
+    const charityContract = new ethers.Contract(contractAddress, charityABI, signer);
 
-    setATM(atmContract);
+    setCharityContract(charityContract);
   };
 
-  const getBalance = async () => {
-    if (atm) {
-      setBalance((await atm.getBalance()).toNumber());
+  const getTotalDonations = async () => {
+    if (charityContract) {
+      const total = await charityContract.getTotalDonations();
+      setTotalDonations(ethers.utils.formatEther(total));
     }
   };
 
-  const performTransaction = async (amount) => {
-    if (atm) {
-      let tx = await atm.depositWithdraw(amount);
-      const receipt = await tx.wait();
-      setTransactionDetails(receipt);
-      getBalance();
+  const donate = async () => {
+    if (charityContract && donationAmount > 0) {
+      const amount = ethers.utils.parseEther(donationAmount.toString());
+      let tx = await charityContract.donate({ value: amount });
+      await tx.wait();
+      setDonationAmount(0); // Reset the donation amount
+      getTotalDonations();
     }
-  };
-
-  const renderTransactionDetails = () => {
-    if (transactionDetails) {
-      return (
-        <div>
-          <h3>Transaction Details</h3>
-          <p>Transaction Hash: {transactionDetails.transactionHash}</p>
-          <p>Block Number: {transactionDetails.blockNumber}</p>
-          <p>Gas Used: {transactionDetails.gasUsed.toString()}</p>
-        </div>
-      );
-    }
-    return null;
   };
 
   const initUser = () => {
     // Check to see if user has MetaMask
     if (!ethWallet) {
-      return <p>Please install MetaMask in order to use this ATM.</p>;
+      return <p>Please install MetaMask in order to use this donation tracker.</p>;
     }
 
     // Check to see if user is connected. If not, connect to their account
@@ -94,25 +81,24 @@ export default function HomePage() {
       return <button onClick={connectAccount}>Please connect your MetaMask wallet</button>;
     }
 
-    if (balance === undefined) {
-      getBalance();
+    if (totalDonations === 0) {
+      getTotalDonations();
     }
 
     return (
       <div>
         <p>Your Account: {account}</p>
-        <p>Your Balance: {balance}</p>
+        <p>Total Donations: {totalDonations} ETH</p>
         <div>
           <input
             type="number"
-            placeholder="Transaction Amount"
-            value={transactionAmt}
-            onChange={(e) => setTransactionAmt(parseInt(e.target.value))}
+            placeholder="Donation Amount in ETH"
+            value={donationAmount}
+            onChange={(e) => setDonationAmount(parseFloat(e.target.value))}
+            min="0"
           />
-          <button onClick={() => performTransaction(transactionAmt)}>Deposit</button>
-          <button onClick={() => performTransaction(-transactionAmt)}>Withdraw</button>
+          <button onClick={donate} disabled={donationAmount <= 0}>Donate</button>
         </div>
-        {renderTransactionDetails()}
       </div>
     );
   };
@@ -124,15 +110,36 @@ export default function HomePage() {
   return (
     <main className="container">
       <header>
-        <h1>Welcome to the Metacrafters ATM!</h1>
+        <h1>Welcome to the Charity Donation Tracker!</h1>
       </header>
       {initUser()}
       <style jsx>{`
         .container {
           text-align: center;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
         }
         input {
           margin-right: 10px;
+          padding: 5px;
+          font-size: 1rem;
+        }
+        button {
+          padding: 5px 10px;
+          font-size: 1rem;
+          cursor: pointer;
+          background-color: #0070f3;
+          color: white;
+          border: none;
+          border-radius: 5px;
+        }
+        button:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+        }
+        button:hover:enabled {
+          background-color: #005bb5;
         }
       `}</style>
     </main>
