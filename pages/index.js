@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import charityAbi from "../artifacts/contracts/CharityDonationTracker.sol/CharityDonationTracker.json";
+import charityAbi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
@@ -56,9 +56,10 @@ export default function HomePage() {
   const getTotalDonations = async () => {
     if (charityContract) {
       const total = await charityContract.getTotalDonations();
-      setTotalDonations(ethers.utils.formatEther(total));
+      setTotalDonations(total.toNumber());
     }
   };
+
 
   const donate = async () => {
     if (charityContract && donationAmount > 0) {
