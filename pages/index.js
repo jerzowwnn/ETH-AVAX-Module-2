@@ -1,99 +1,217 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json"; // Update path as per your project
+import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
 export default function HomePage() {
-  const [ethWallet, setEthWallet] = useState(null); // State to store MetaMask instance
-  const [account, setAccount] = useState(""); // State to store connected account address
-  const [atmContract, setATMContract] = useState(null); // State to store smart contract instance
-  const [ownerAddress, setOwnerAddress] = useState(""); // State to store contract owner address
-  const [totalDonations, setTotalDonations] = useState(0); // State to store total donations
+  const [ethWallet, setEthWallet] = useState(undefined);
+  const [account, setAccount] = useState(undefined);
+  const [atm, setATM] = useState(undefined);
+  const [balance, setBalance] = useState(undefined);
+  const [operand1, setOperand1] = useState(0);
+  const [operand2, setOperand2] = useState(0);
+  const [operationResult, setOperationResult] = useState("");
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Your contract address
-  const atmABI = atm_abi.abi; // ABI of your smart contract
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const atmABI = atm_abi.abi;
 
-  // Function to initialize MetaMask
-  const initMetaMask = async () => {
+  const getWallet = async () => {
     if (window.ethereum) {
-      const wallet = new ethers.providers.Web3Provider(window.ethereum);
-      setEthWallet(wallet);
-    } else {
-      alert("MetaMask extension not detected. Please install MetaMask.");
+      setEthWallet(window.ethereum);
     }
-  };
 
-  // Function to connect MetaMask account
-  const connectAccount = async () => {
-    try {
-      const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
-      setAccount(accounts[0]);
-    } catch (error) {
-      console.error("Error connecting to MetaMask:", error);
-    }
-  };
-
-  // Function to initialize smart contract instance
-  const initContract = () => {
     if (ethWallet) {
-      const contract = new ethers.Contract(contractAddress, atmABI, ethWallet.getSigner());
-      setATMContract(contract);
+      const accounts = await ethWallet.request({ method: "eth_accounts" });
+      handleAccount(accounts);
     }
   };
 
-  // Function to fetch and display contract owner and total donations
-  const fetchContractData = async () => {
-    if (atmContract) {
-      try {
-        const owner = await atmContract.getContractOwner();
-        setOwnerAddress(owner);
+  const handleAccount = (accounts) => {
+    if (accounts.length > 0) {
+      setAccount(accounts[0]);
+    } else {
+      setAccount(undefined);
+    }
+  };
 
-        const donations = await atmContract.getTotalDonations();
-        setTotalDonations(donations.toNumber());
-      } catch (error) {
-        console.error("Error fetching contract data:", error);
+  const connectAccount = async () => {
+    if (!ethWallet) {
+      alert("MetaMask wallet is required to connect");
+      return;
+    }
+
+    const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
+    handleAccount(accounts);
+
+    // once wallet is set we can get a reference to our deployed contract
+    getATMContract();
+  };
+
+  const getATMContract = () => {
+    const provider = new ethers.providers.Web3Provider(ethWallet);
+    const signer = provider.getSigner();
+    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
+
+    setATM(atmContract);
+  };
+
+  const getBalance = async () => {
+    if (atm) {
+      const contractBalance = await atm.getBalance();
+      setBalance(ethers.utils.formatEther(contractBalance));
+    }
+  };
+
+  const performOperation = async (operation) => {
+    if (atm) {
+      let tx;
+      if (operation === "add") {
+        tx = await atm.add(operand1, operand2, { value: ethers.utils.parseEther("1") });
+      } else if (operation === "subtract") {
+        tx = await atm.subtract(operand1, operand2, { value: ethers.utils.parseEther("1") });
       }
+      await tx.wait();
+      getBalance();
+      listenForEvents();
     }
   };
 
-  // Function to handle donation
-  const donate = async () => {
-    if (atmContract) {
-      try {
-        const amount = ethers.utils.parseEther("1"); // Convert 1 ETH to Wei
-        const tx = await atmContract.donate({ value: amount });
-        await tx.wait();
-        fetchContractData(); // Refresh contract data after donation
-      } catch (error) {
-        console.error("Error donating:", error);
-      }
+  const listenForEvents = () => {
+    if (atm) {
+      atm.on("Calculation", (sender, operation, operand1, operand2, result) => {
+        setOperationResult(`Operation ${operation}: ${operand1} ${operation === "Addition" ? "+" : "-"} ${operand2} = ${result}`);
+      });
     }
   };
 
-  // Initialize MetaMask and contract on component mount
   useEffect(() => {
-    initMetaMask();
-    initContract();
+    getWallet();
   }, []);
 
-  // Render UI based on MetaMask connection and contract initialization
+  const renderContent = () => {
+    if (!ethWallet) {
+      return (
+        <div>
+          <p>Please install MetaMask to use this application.</p>
+        </div>
+      );
+    } else if (!account) {
+      return (
+        <div>
+          <button onClick={connectAccount} className="connect-button">
+            Connect MetaMask
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="user-panel">
+          <p className="account-info">Connected Account: {account}</p>
+          <p className="balance-info">Account Balance: {balance} ETH</p>
+          <div className="operation-inputs">
+            <input
+              type="number"
+              placeholder="Operand 1"
+              value={operand1}
+              onChange={(e) => setOperand1(e.target.value)}
+              className="operand-input"
+            />
+            <input
+              type="number"
+              placeholder="Operand 2"
+              value={operand2}
+              onChange={(e) => setOperand2(e.target.value)}
+              className="operand-input"
+            />
+          </div>
+          <div className="operation-buttons">
+            <button onClick={() => performOperation("add")} className="operation-button">
+              Add
+            </button>
+            <button onClick={() => performOperation("subtract")} className="operation-button">
+              Subtract
+            </button>
+          </div>
+          {operationResult && <p className="operation-result">{operationResult}</p>}
+        </div>
+      );
+    }
+  };
+
   return (
     <main className="container">
       <header>
-        <h1>Welcome to the Charity Donation Tracker!</h1>
+        <h1>Welcome to the Metacrafters ATM!</h1>
       </header>
-      {!account ? (
-        <button onClick={connectAccount}>Connect MetaMask</button>
-      ) : (
-        <div>
-          <p>Connected Account: {account}</p>
-          <p>Contract Owner: {ownerAddress}</p>
-          <p>Total Donations: {totalDonations}</p>
-          <button onClick={donate}>Donate 1 ETH</button>
-        </div>
-      )}
+      {renderContent()}
       <style jsx>{`
         .container {
-          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          font-family: Arial, sans-serif;
+          background-color: #f0f0f0;
+        }
+
+        .connect-button,
+        .operation-button {
+          margin: 8px;
+          padding: 10px;
+          font-size: 16px;
+          cursor: pointer;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          outline: none;
+        }
+
+        .connect-button:hover,
+        .operation-button:hover {
+          opacity: 0.8;
+        }
+
+        .user-panel {
+          width: 80%;
+          max-width: 600px;
+          background-color: white;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .account-info,
+        .balance-info {
+          font-size: 18px;
+          margin-bottom: 10px;
+        }
+
+        .operation-inputs {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+
+        .operand-input {
+          flex: 1;
+          padding: 8px;
+          font-size: 16px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          margin-right: 8px;
+        }
+
+        .operation-buttons {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+        }
+
+        .operation-result {
+          font-size: 16px;
+          font-weight: bold;
+          color: #28a745;
         }
       `}</style>
     </main>
