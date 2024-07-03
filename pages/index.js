@@ -6,8 +6,8 @@ export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
   const [charityContract, setCharityContract] = useState(undefined);
-  const [totalDonations, setTotalDonations] = useState(0); // Set initial totalDonations to 0
-  const [donationAmount, setDonationAmount] = useState(0); // Set initial donationAmount to 0
+  const [totalDonations, setTotalDonations] = useState(undefined); 
+  const [donationAmount, setDonationAmount] = useState(""); 
 
   const contractAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   const charityABI = charityAbi.abi;
