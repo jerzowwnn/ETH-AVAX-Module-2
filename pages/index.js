@@ -112,13 +112,19 @@ export default function HomePage() {
       <header>
         <h1>Welcome to the Charity Donation Tracker!</h1>
       </header>
-      {initUser()}
+      <div className="content">
+        {initUser()}
+      </div>
       <style jsx>{`
         .container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          background-color: #f0f0f0; /* Light gray background */
+        }
+        .content {
           text-align: center;
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
         }
         input {
           margin-right: 10px;
