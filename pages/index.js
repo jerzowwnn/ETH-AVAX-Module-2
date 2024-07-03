@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import charityAbi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [charityContract, setCharityContract] = useState(undefined);
-  const [totalDonations, setTotalDonations] = useState(undefined); 
-  const [donationAmount, setDonationAmount] = useState(""); 
+  const [atm, setATM] = useState(undefined);
+  const [totalDonations, setTotalDonations] = useState(undefined);
+  const [donationAmount, setDonationAmount] = useState(0);
+  const [transactionDetails, setTransactionDetails] = useState(null);
 
-  const contractAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-  const charityABI = charityAbi.abi;
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
     if (window.ethereum) {
@@ -42,33 +43,51 @@ export default function HomePage() {
     handleAccount(accounts);
 
     // Once wallet is set we can get a reference to our deployed contract
-    getCharityContract();
+    getATMContract();
   };
 
-  const getCharityContract = () => {
+  const getATMContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const charityContract = new ethers.Contract(contractAddress, charityABI, signer);
+    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
 
-    setCharityContract(charityContract);
+    setATM(atmContract);
   };
 
   const getTotalDonations = async () => {
-    if (charityContract) {
-      const total = await charityContract.getTotalDonations();
-      setTotalDonations(total.toNumber());
+    if (atm) {
+      const total = await atm.getTotalDonations();
+      setTotalDonations(ethers.utils.formatEther(total));
     }
   };
 
-
   const donate = async () => {
-    if (charityContract && donationAmount > 0) {
+    if (atm && donationAmount > 0) {
       const amount = ethers.utils.parseEther(donationAmount.toString());
-      let tx = await charityContract.donate({ value: amount });
-      await tx.wait();
-      setDonationAmount(0); // Reset the donation amount
-      getTotalDonations();
+      try {
+        let tx = await atm.donate({ value: amount });
+        const receipt = await tx.wait();
+        setTransactionDetails(receipt);
+        setDonationAmount(0); // Reset the donation amount
+        getTotalDonations();
+      } catch (error) {
+        console.error("Error donating:", error);
+      }
     }
+  };
+
+  const renderTransactionDetails = () => {
+    if (transactionDetails) {
+      return (
+        <div className="transaction-details">
+          <h3>Transaction Details</h3>
+          <p>Transaction Hash: {transactionDetails.transactionHash}</p>
+          <p>Block Number: {transactionDetails.blockNumber}</p>
+          <p>Gas Used: {transactionDetails.gasUsed.toString()}</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   const initUser = () => {
@@ -79,22 +98,18 @@ export default function HomePage() {
 
     // Check to see if user is connected. If not, connect to their account
     if (!account) {
-      return (
-        <div>
-          <button onClick={connectAccount}>Please connect your MetaMask wallet</button>
-        </div>
-      );
+      return <button className="connect-button" onClick={connectAccount}>Please connect your MetaMask wallet</button>;
     }
 
-    if (totalDonations === 0) {
+    if (totalDonations === undefined) {
       getTotalDonations();
     }
 
     return (
-      <div>
-        <p>Your Account: {account}</p>
-        <p>Total Donations: {totalDonations} ETH</p>
-        <div>
+      <div className="user-container">
+        <p><strong>Your Account:</strong> {account}</p>
+        <p><strong>Total Donations:</strong> {totalDonations} ETH</p>
+        <div className="donation-container">
           <input
             type="number"
             placeholder="Donation Amount in ETH"
@@ -102,10 +117,9 @@ export default function HomePage() {
             onChange={(e) => setDonationAmount(parseFloat(e.target.value))}
             min="0"
           />
+          <button className="donate-button" onClick={donate} disabled={donationAmount <= 0}>Donate</button>
         </div>
-        <div>
-          <button onClick={donate} disabled={donationAmount <= 0}>Donate</button>
-        </div>
+        {renderTransactionDetails()}
       </div>
     );
   };
@@ -119,40 +133,55 @@ export default function HomePage() {
       <header>
         <h1>Welcome to the Charity Donation Tracker!</h1>
       </header>
-      <div className="content">
-        {initUser()}
-      </div>
+      {initUser()}
       <style jsx>{`
         .container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background-color: #f0f0f0; /* Light gray background */
-        }
-        .content {
           text-align: center;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          font-family: Arial, sans-serif;
         }
-        input {
-          margin-right: 10px;
-          padding: 5px;
-          font-size: 1rem;
+        header {
+          background-color: #0070f3;
+          color: white;
+          padding: 10px 0;
+          border-radius: 5px;
         }
-        button {
-          padding: 5px 10px;
+        .connect-button, .donate-button {
+          padding: 10px 20px;
           font-size: 1rem;
           cursor: pointer;
           background-color: #0070f3;
           color: white;
           border: none;
           border-radius: 5px;
+          margin-top: 10px;
         }
-        button:disabled {
+        .connect-button:disabled, .donate-button:disabled {
           background-color: #cccccc;
           cursor: not-allowed;
         }
-        button:hover:enabled {
+        .connect-button:hover:enabled, .donate-button:hover:enabled {
           background-color: #005bb5;
+        }
+        .user-container {
+          margin-top: 20px;
+        }
+        .donation-container {
+          margin-top: 10px;
+        }
+        input {
+          padding: 10px;
+          font-size: 1rem;
+          border: 1px solid #cccccc;
+          border-radius: 5px;
+          width: calc(100% - 24px);
+          margin-right: 10px;
+        }
+        .transaction-details {
+          margin-top: 20px;
+          text-align: left;
         }
       `}</style>
     </main>

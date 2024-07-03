@@ -5,21 +5,19 @@ contract Assessment {
     address payable public owner;
     uint256 public totalDonations;
 
-    event DonationReceived(address donor, uint256 amount);
+    event DonationReceived(address indexed donor, uint256 amount);
 
-    constructor() payable {
+    constructor() {
         owner = payable(msg.sender);
+        totalDonations = 0;
     }
 
-    //Get total donations
     function getTotalDonations() public view returns (uint256) {
         return totalDonations;
     }
 
-    //Donate amount
     function donate() public payable {
         require(msg.value > 0, "Donation amount must be greater than zero");
-
         totalDonations += msg.value;
         emit DonationReceived(msg.sender, msg.value);
     }
