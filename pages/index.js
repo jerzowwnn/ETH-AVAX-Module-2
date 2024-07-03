@@ -1,33 +1,31 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json"; // Update path as per your project
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
+  const [ownerAddress, setOwnerAddress] = useState(undefined);
   const [totalDonations, setTotalDonations] = useState(undefined);
-  const [donationAmount, setDonationAmount] = useState(0);
-  const [transactionDetails, setTransactionDetails] = useState(null);
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Your contract address
   const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
     if (window.ethereum) {
       setEthWallet(window.ethereum);
     }
-
     if (ethWallet) {
       const accounts = await ethWallet.request({ method: "eth_accounts" });
-      handleAccount(accounts);
+      handleAccount(accounts[0]);
     }
   };
 
-  const handleAccount = (accounts) => {
-    if (accounts.length > 0) {
-      console.log("Account connected: ", accounts[0]);
-      setAccount(accounts[0]);
+  const handleAccount = (account) => {
+    if (account) {
+      console.log("Account connected: ", account);
+      setAccount(account);
     } else {
       console.log("No account found");
     }
@@ -40,9 +38,9 @@ export default function HomePage() {
     }
 
     const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
-    handleAccount(accounts);
+    handleAccount(accounts[0]);
 
-    // Once wallet is set we can get a reference to our deployed contract
+    // once wallet is set we can get a reference to our deployed contract
     getATMContract();
   };
 
@@ -52,81 +50,60 @@ export default function HomePage() {
     const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
 
     setATM(atmContract);
+    getContractDetails();
   };
 
-  const getTotalDonations = async () => {
+  const getContractDetails = async () => {
     if (atm) {
-      const total = await atm.getTotalDonations();
-      setTotalDonations(ethers.utils.formatEther(total));
+      const owner = await atm.getContractOwner();
+      setOwnerAddress(owner);
+
+      const donations = await atm.getTotalDonations();
+      setTotalDonations(donations.toNumber());
     }
   };
 
   const donate = async () => {
-    if (atm && donationAmount > 0) {
-      const amount = ethers.utils.parseEther(donationAmount.toString());
-      try {
-        let tx = await atm.donate({ value: amount });
-        const receipt = await tx.wait();
-        setTransactionDetails(receipt);
-        setDonationAmount(0); // Reset the donation amount
-        getTotalDonations();
-      } catch (error) {
-        console.error("Error donating:", error);
-      }
+    if (atm) {
+      const amount = ethers.utils.parseEther("1"); // Convert 1 ETH to Wei
+      const tx = await atm.donate({ value: amount });
+      await tx.wait();
+      getContractDetails();
     }
-  };
-
-  const renderTransactionDetails = () => {
-    if (transactionDetails) {
-      return (
-        <div className="transaction-details">
-          <h3>Transaction Details</h3>
-          <p>Transaction Hash: {transactionDetails.transactionHash}</p>
-          <p>Block Number: {transactionDetails.blockNumber}</p>
-          <p>Gas Used: {transactionDetails.gasUsed.toString()}</p>
-        </div>
-      );
-    }
-    return null;
   };
 
   const initUser = () => {
-    // Check to see if user has MetaMask
+    // Check if MetaMask is installed
     if (!ethWallet) {
-      return <p>Please install MetaMask in order to use this donation tracker.</p>;
+      return <p>Please install MetaMask in order to use this application.</p>;
     }
 
-    // Check to see if user is connected. If not, connect to their account
+    // Check if user is connected. If not, connect to their account
     if (!account) {
-      return <button className="connect-button" onClick={connectAccount}>Please connect your MetaMask wallet</button>;
+      return (
+        <button onClick={connectAccount}>
+          Please connect your MetaMask wallet
+        </button>
+      );
     }
 
-    if (totalDonations === undefined) {
-      getTotalDonations();
+    if (!ownerAddress || totalDonations === undefined) {
+      getContractDetails();
     }
 
     return (
-      <div className="user-container">
-        <p><strong>Your Account:</strong> {account}</p>
-        <p><strong>Total Donations:</strong> {totalDonations} ETH</p>
-        <div className="donation-container">
-          <input
-            type="number"
-            placeholder="Donation Amount in ETH"
-            value={donationAmount}
-            onChange={(e) => setDonationAmount(parseFloat(e.target.value))}
-            min="0"
-          />
-          <button className="donate-button" onClick={donate} disabled={donationAmount <= 0}>Donate</button>
-        </div>
-        {renderTransactionDetails()}
+      <div>
+        <p>Your Account: {account}</p>
+        <p>Contract Owner: {ownerAddress}</p>
+        <p>Total Donations: {totalDonations}</p>
+        <button onClick={donate}>Donate 1 ETH</button>
       </div>
     );
   };
 
   useEffect(() => {
     getWallet();
-  }, [ethWallet]);
+  }, []);
 
   return (
     <main className="container">
@@ -137,54 +114,8 @@ export default function HomePage() {
       <style jsx>{`
         .container {
           text-align: center;
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: Arial, sans-serif;
-        }
-        header {
-          background-color: #0070f3;
-          color: white;
-          padding: 10px 0;
-          border-radius: 5px;
-        }
-        .connect-button, .donate-button {
-          padding: 10px 20px;
-          font-size: 1rem;
-          cursor: pointer;
-          background-color: #0070f3;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          margin-top: 10px;
-        }
-        .connect-button:disabled, .donate-button:disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-        }
-        .connect-button:hover:enabled, .donate-button:hover:enabled {
-          background-color: #005bb5;
-        }
-        .user-container {
-          margin-top: 20px;
-        }
-        .donation-container {
-          margin-top: 10px;
-        }
-        input {
-          padding: 10px;
-          font-size: 1rem;
-          border: 1px solid #cccccc;
-          border-radius: 5px;
-          width: calc(100% - 24px);
-          margin-right: 10px;
-        }
-        .transaction-details {
-          margin-top: 20px;
-          text-align: left;
         }
       `}</style>
     </main>
   );
 }
- 
