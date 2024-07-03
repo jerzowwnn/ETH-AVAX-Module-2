@@ -1,6 +1,6 @@
 # ETH-AVAX-Module-2
 # Overview
-This repository contains my files for the Module 2 project in the ETH + AVAX Proof: Intermediate EVM Course. It holds a contract named Assessment.sol, which is a smart contract for a simple calculator that allows addition and subtraction; each calculation performed adds 1 ETH to the owner's balance. It contains two functions with the following functionalities:
+This repository contains my files for the Module 2 project in the ETH + AVAX Proof: Intermediate EVM Course. It holds a contract named Assessment.sol, which is a smart contract for a simple calculator that allows addition and subtraction; each calculation performed adds 1 ETH to the owner's balance. It contains three functions with the following functionalities:
 - add() = a function that adds two integers
 - subtract() = a function that subtracts two integers
 - getBalance() = a function that retrieves the owner's current balance
