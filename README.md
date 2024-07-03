@@ -1,8 +1,9 @@
 # ETH-AVAX-Module-2
 # Overview
-This repository contains my files for the Module 2 project in the ETH + AVAX Proof: Intermediate EVM Course. It holds a contract named Assessment.sol, which is a smart contract for a simple charity donation tracking system that allows the contract owner to make donations and view total amount of donations received. It contains two functions with the following functionalities:
-- getTotalDonations() = a function that returns the total amount of donations received
-- donate() = a function that enables the owner to donate funds from their balance. 
+This repository contains my files for the Module 2 project in the ETH + AVAX Proof: Intermediate EVM Course. It holds a contract named Assessment.sol, which is a smart contract for a simple calculator that allows addition and subtraction; each calculation performed adds 1 ETH to the owner's balance. It contains two functions with the following functionalities:
+- add() = a function that adds two integers
+- subtract() = a function that subtracts two integers
+- getBalance() = a function that retrieves the owner's current balance
 
 It also contains index.js, which is an application for the Assessment.sol contract. It displays the results of the function in its frontend. This script offers the following features and functionalities:
 - Front-end functionality that allows users to withdraw from and deposit funds to their wallet.
