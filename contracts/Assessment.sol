@@ -2,31 +2,33 @@
 pragma solidity ^0.8.9;
 
 contract Assessment {
-    address public owner;
-    uint256 public totalDonations;
+    address payable public owner;
+    uint256 public balance;
 
-    event DonationReceived(address indexed donor, uint256 amount);
-    event TotalDonationsUpdated(uint256 total);
+    event Calculation(address indexed sender, string operation, uint256 operand1, uint256 operand2, uint256 result);
 
-    constructor() {
-        owner = msg.sender;
-        totalDonations = 0;
+    constructor() payable {
+        owner = payable(msg.sender);
+        balance = 0;
     }
 
-    function donate() external payable {
-        require(msg.value > 0, "Donation amount must be greater than 0");
+    function add(uint256 _operand1, uint256 _operand2) public payable {
+        require(msg.value >= 1 ether, "Insufficient payment. Add operation requires 1 ETH.");
+        balance += msg.value;
         
-        totalDonations += msg.value;
-
-        emit DonationReceived(msg.sender, msg.value);
-        emit TotalDonationsUpdated(totalDonations);
+        uint256 result = _operand1 + _operand2;
+        emit Calculation(msg.sender, "Addition", _operand1, _operand2, result);
     }
 
-    function getContractOwner() external view returns (address) {
-        return owner;
+    function subtract(uint256 _operand1, uint256 _operand2) public payable {
+        require(msg.value >= 1 ether, "Insufficient payment. Subtract operation requires 1 ETH.");
+        balance += msg.value;
+
+        uint256 result = _operand1 - _operand2;
+        emit Calculation(msg.sender, "Subtraction", _operand1, _operand2, result);
     }
 
-    function getTotalDonations() external view returns (uint256) {
-        return totalDonations;
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 }
