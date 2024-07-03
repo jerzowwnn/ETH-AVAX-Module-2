@@ -78,7 +78,11 @@ export default function HomePage() {
 
     // Check to see if user is connected. If not, connect to their account
     if (!account) {
-      return <button onClick={connectAccount}>Please connect your MetaMask wallet</button>;
+      return (
+        <div>
+          <button onClick={connectAccount}>Please connect your MetaMask wallet</button>
+        </div>
+      );
     }
 
     if (totalDonations === 0) {
@@ -97,6 +101,8 @@ export default function HomePage() {
             onChange={(e) => setDonationAmount(parseFloat(e.target.value))}
             min="0"
           />
+        </div>
+        <div>
           <button onClick={donate} disabled={donationAmount <= 0}>Donate</button>
         </div>
       </div>
